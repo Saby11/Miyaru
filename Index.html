@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Miyaru · Coral Slate Digitizer</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Lora:wght@400;600&display=swap');
+:root {
+  --deep: #0a2342; --mid: #0d3b5e; --teal: #0a5c7a; --bright: #0e8080;
+  --accent: #7ecfc0; --text: #e8f8f5; --dim: rgba(255,255,255,0.45);
+  --card: rgba(255,255,255,0.06); --border: rgba(126,207,192,0.2);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Lora', Georgia, serif; background: linear-gradient(150deg,#0a2342 0%,#0d3b5e 35%,#0a5c7a 70%,#0e8080 100%); min-height:100vh; color:var(--text); }
+
+/* SETUP */
+#setup { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:40px 24px; text-align:center; }
+#app { display:none; }
+.eyebrow { font-family:‘Space Mono’,monospace; font-size:11px; letter-spacing:4px; color:var(–accent); text-transform:uppercase; margin-bottom:12px; }
+.setup-title { font-size:32px; font-weight:600; margin-bottom:8px; }
+.setup-sub { color:var(–dim); font-size:15px; max-width:420px; line-height:1.6; margin-bottom:40px; }
+.card { background:rgba(255,255,255,0.07); border:1px solid var(–border); border-radius:20px; padding:36px; max-width:460px; width:100%; backdrop-filter:blur(10px); text-align:left; }
+.label { font-family:‘Space Mono’,monospace; font-size:10px; letter-spacing:2px; color:var(–accent); text-transform:uppercase; margin-bottom:10px; display:block; }
+.key-input { width:100%; padding:14px 18px; background:rgba(0,0,0,0.3); border:1px solid rgba(126,207,192,0.3); border-radius:12px; color:#fff; font-family:‘Space Mono’,monospace; font-size:13px; outline:none; transition:border-color 0.2s; margin-bottom:10px; }
+.key-input:focus { border-color:var(–accent); }
+.key-input::placeholder { color:rgba(255,255,255,0.2); }
+.hint { font-size:12px; color:var(–dim); line-height:1.5; margin-bottom:28px; }
+.hint a { color:var(–accent); }
+.btn-primary { width:100%; padding:16px; background:linear-gradient(135deg,var(–bright),var(–teal)); border:none; border-radius:12px; color:#fff; font-family:‘Space Mono’,monospace; font-size:13px; letter-spacing:2px; text-transform:uppercase; cursor:pointer; box-shadow:0 4px 24px rgba(14,128,128,0.4); transition:opacity 0.2s; }
+.btn-primary:hover { opacity:0.9; }
+.btn-demo { width:100%; margin-top:12px; padding:13px; background:transparent; border:1px solid rgba(126,207,192,0.35); border-radius:12px; color:var(–accent); font-family:‘Space Mono’,monospace; font-size:12px; letter-spacing:1.5px; cursor:pointer; transition:all 0.2s; }
+.btn-demo:hover { background:rgba(126,207,192,0.08); border-color:var(–accent); }
+
+/* HEADER */
+header { background:rgba(0,0,0,0.35); backdrop-filter:blur(14px); border-bottom:1px solid var(–border); padding:18px 28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; position:sticky; top:0; z-index:100; }
+.brand-eye { font-family:‘Space Mono’,monospace; font-size:9px; letter-spacing:3px; color:var(–accent); text-transform:uppercase; margin-bottom:3px; }
+.brand-h1 { font-size:18px; font-weight:600; }
+.stats { display:flex; gap:20px; align-items:center; }
+.stat { text-align:center; font-family:‘Space Mono’,monospace; }
+.stat-n { font-size:20px; font-weight:700; color:var(–accent); line-height:1; }
+.stat-l { font-size:9px; letter-spacing:1.5px; color:var(–dim); text-transform:uppercase; margin-top:2px; }
+.btn-export { padding:11px 22px; background:linear-gradient(135deg,var(–bright),var(–teal)); border:none; border-radius:10px; color:#fff; font-family:‘Space Mono’,monospace; font-size:11px; letter-spacing:1.5px; cursor:pointer; box-shadow:0 3px 14px rgba(14,128,128,0.35); transition:opacity 0.2s; white-space:nowrap; }
+.btn-export:hover { opacity:0.85; }
+.btn-changekey { padding:8px 16px; background:transparent; border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:var(–dim); font-family:‘Space Mono’,monospace; font-size:10px; cursor:pointer; }
+.btn-changekey:hover { border-color:var(–accent); color:var(–accent); }
+
+/* CONTENT */
+.content { max-width:960px; margin:0 auto; padding:36px 24px 80px; }
+.drop-zone { border:2px dashed rgba(126,207,192,0.35); border-radius:20px; padding:52px 32px; text-align:center; cursor:pointer; background:rgba(255,255,255,0.025); transition:all 0.2s; margin-bottom:32px; position:relative; }
+.drop-zone:hover { border-color:var(–accent); background:rgba(126,207,192,0.07); }
+.drop-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.drop-icon { font-size:52px; margin-bottom:14px; }
+.drop-title { font-family:‘Space Mono’,monospace; font-size:14px; color:var(–accent); margin-bottom:6px; }
+.drop-sub { color:var(–dim); font-size:13px; }
+
+/* PROC */
+.proc-item { display:flex; align-items:center; gap:12px; padding:13px 18px; background:var(–card); border:1px solid var(–border); border-radius:10px; margin-bottom:8px; font-family:‘Space Mono’,monospace; font-size:12px; }
+.proc-name { color:rgba(255,255,255,0.65); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.status-loading { color:var(–accent); }
+.status-done { color:#6de89a; }
+.status-error { color:#ff8080; }
+
+/* SLATE CARDS */
+.slate-card { background:var(–card); border:1px solid var(–border); border-radius:18px; padding:22px 26px; margin-bottom:20px; }
+.slate-eye { font-family:‘Space Mono’,monospace; font-size:10px; letter-spacing:2px; color:var(–accent); text-transform:uppercase; margin-bottom:5px; }
+.slate-hdr { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+.slate-meta { font-family:‘Space Mono’,monospace; font-size:12px; color:rgba(255,255,255,0.6); display:flex; flex-wrap:wrap; gap:14px; }
+.btn-del { background:rgba(255,80,80,0.12); border:1px solid rgba(255,80,80,0.25); color:#ff9090; border-radius:8px; padding:5px 14px; font-size:12px; cursor:pointer; font-family:‘Space Mono’,monospace; }
+.tbl-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { text-align:left; padding:9px 14px; font-family:‘Space Mono’,monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(–accent); border-bottom:1px solid rgba(126,207,192,0.2); white-space:nowrap; }
+td { padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.05); }
+td.t-type { font-family:‘Space Mono’,monospace; font-size:12px; font-weight:700; }
+td.t-empty { color:var(–dim); }
+.badge { display:inline-block; padding:2px 10px; border-radius:20px; font-family:‘Space Mono’,monospace; font-size:10px; letter-spacing:1px; }
+.b-alive { background:rgba(109,232,154,0.15); color:#6de89a; border:1px solid rgba(109,232,154,0.3); }
+.b-dead { background:rgba(255,120,80,0.15); color:#ff9060; border:1px solid rgba(255,120,80,0.3); }
+.b-bleached { background:rgba(255,220,100,0.15); color:#ffd060; border:1px solid rgba(255,220,100,0.3); }
+.b-mixed { background:rgba(180,140,255,0.15); color:#c0a0ff; border:1px solid rgba(180,140,255,0.3); }
+.empty-state { text-align:center; color:var(–dim); font-family:‘Space Mono’,monospace; font-size:13px; padding:20px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(126,207,192,0.3); border-top-color:var(–accent); border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; }
+
+/* TABS */
+.tabs { display:flex; gap:4px; background:rgba(0,0,0,0.2); padding:4px; border-radius:10px; }
+.tab { padding:8px 18px; border:none; border-radius:8px; font-family:‘Space Mono’,monospace; font-size:11px; letter-spacing:1px; cursor:pointer; background:transparent; color:var(–dim); transition:all 0.2s; }
+.tab.active { background:rgba(126,207,192,0.15); color:var(–accent); border:1px solid var(–border); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+/* SUMMARY PAGE */
+.hero { padding:48px 32px 36px; text-align:center; border-bottom:1px solid var(–border); }
+.hero-eye { font-family:‘Space Mono’,monospace; font-size:11px; letter-spacing:4px; color:var(–accent); text-transform:uppercase; margin-bottom:14px; }
+.hero-title { font-size:clamp(24px,4vw,40px); font-weight:600; letter-spacing:-1px; margin-bottom:10px; }
+.hero-sub { color:var(–dim); font-size:14px; margin-bottom:28px; }
+.hero-stats { display:flex; justify-content:center; gap:36px; flex-wrap:wrap; }
+.hstat { text-align:center; font-family:‘Space Mono’,monospace; }
+.hstat-n { font-size:32px; font-weight:700; color:var(–accent); line-height:1; }
+.hstat-l { font-size:9px; letter-spacing:2px; color:var(–dim); text-transform:uppercase; margin-top:4px; }
+.swrap { max-width:960px; margin:0 auto; padding:36px 24px 80px; }
+.section-title { font-family:‘Space Mono’,monospace; font-size:10px; letter-spacing:3px; color:var(–accent); text-transform:uppercase; margin-bottom:18px; padding-bottom:8px; border-bottom:1px solid var(–border); }
+.highlights { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-bottom:44px; }
+.hl-card { background:var(–card); border:1px solid var(–border); border-radius:14px; padding:18px 20px; }
+.hl-card.gold { border-color:rgba(255,210,80,0.4); background:rgba(255,210,80,0.05); }
+.hl-card.red { border-color:rgba(255,100,80,0.4); background:rgba(255,100,80,0.05); }
+.hl-card.green { border-color:rgba(109,232,154,0.3); background:rgba(109,232,154,0.04); }
+.hl-tag { font-family:‘Space Mono’,monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; }
+.hl-card.gold .hl-tag { color:#ffd060; }
+.hl-card.red .hl-tag { color:#ff8060; }
+.hl-card.green .hl-tag { color:#6de89a; }
+.hl-card .hl-tag { color:var(–accent); }
+.hl-title { font-size:14px; font-weight:600; margin-bottom:5px; }
+.hl-body { font-size:12px; color:rgba(255,255,255,0.65); line-height:1.6; }
+.stbl-wrap { overflow-x:auto; margin-bottom:44px; }
+.stbl-wrap table { font-size:12px; }
+.stbl-wrap td.pair { font-family:‘Space Mono’,monospace; font-weight:700; font-size:11px; color:var(–accent); white-space:nowrap; }
+.stbl-wrap td.sdim { color:var(–dim); }
+.totals { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px; margin-bottom:44px; }
+.coral-card { background:var(–card); border:1px solid var(–border); border-radius:12px; padding:14px 16px; }
+.coral-name { font-family:‘Space Mono’,monospace; font-size:10px; font-weight:700; color:var(–accent); margin-bottom:8px; }
+.bar-row { display:flex; align-items:center; gap:6px; font-size:10px; margin-bottom:4px; }
+.bar-label { font-family:‘Space Mono’,monospace; font-size:9px; color:var(–dim); width:50px; flex-shrink:0; }
+.bar-track { flex:1; height:5px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:3px; }
+.bar-fill.alive { background:#6de89a; }
+.bar-fill.dead { background:#ff9060; }
+.bar-fill.bleached { background:#ffd060; }
+.bar-n { font-family:‘Space Mono’,monospace; font-size:9px; color:var(–dim); width:18px; text-align:right; flex-shrink:0; }
+.insights { background:var(–card); border:1px solid var(–border); border-radius:16px; padding:24px 28px; margin-bottom:44px; }
+.insight-item { display:flex; gap:14px; margin-bottom:18px; }
+.insight-item:last-child { margin-bottom:0; }
+.insight-icon { font-size:20px; flex-shrink:0; margin-top:2px; }
+.insight-text h4 { font-size:13px; font-weight:600; margin-bottom:4px; }
+.insight-text p { font-size:12px; color:rgba(255,255,255,0.65); line-height:1.6; }
+.sfooter { text-align:center; font-family:‘Space Mono’,monospace; font-size:10px; color:var(–dim); letter-spacing:2px; padding-top:28px; border-top:1px solid var(–border); }
+</style>
+
+</head>
+<body>
+
+<div id="setup">
+  <div class="eyebrow">Miyaru Programme · SGOSA</div>
+  <h1 class="setup-title">🪸 Coral Slate Digitizer</h1>
+  <p class="setup-sub">AI-powered underwater slate reader. Photograph your survey slates — this tool extracts the data automatically.</p>
+  <div class="card">
+    <label class="label">Anthropic API Key</label>
+    <input class="key-input" type="password" id="apikey" placeholder="sk-ant-api03-..." autocomplete="off" />
+    <p class="hint">Get a free key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>. Processing 50 slates costs ~$0.05. Your key never leaves your browser.</p>
+    <button class="btn-primary" id="btn-start">Start Digitizing &rarr;</button>
+    <button class="btn-demo" id="btn-demo">&#128269; View Demo &mdash; no key needed</button>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div>
+      <div class="brand-eye">Miyaru Programme · SGOSA</div>
+      <div class="brand-h1">🪸 Coral Slate Digitizer</div>
+    </div>
+    <div class="stats">
+      <div class="tabs">
+        <button class="tab active" id="tab-digitizer" onclick="showTab('digitizer')">Digitizer</button>
+        <button class="tab" id="tab-summary" onclick="showTab('summary')">Results</button>
+      </div>
+      <div class="stat"><div class="stat-n" id="n-slates">0</div><div class="stat-l">Slates</div></div>
+      <div class="stat"><div class="stat-n" id="n-rows">0</div><div class="stat-l">Coral Rows</div></div>
+      <button class="btn-export" id="btn-export" style="display:none" onclick="exportCSV()">&#11015; Export CSV</button>
+      <button class="btn-changekey" id="btn-changekey">Change Key</button>
+    </div>
+  </header>
+  <div class="tab-content active" id="tc-digitizer">
+  <div class="content">
+    <div class="drop-zone" id="dropzone">
+      <input type="file" accept="image/*" multiple id="fileinput" />
+      <div class="drop-icon">🤿</div>
+      <div class="drop-title">Drop slate photos here</div>
+      <div class="drop-sub">or click to select &middot; multiple files &middot; works on mobile</div>
+    </div>
+    <div id="proc-list"></div>
+    <div id="cards"></div>
+    <div class="empty-state" id="empty">Upload your first slate photo above to begin</div>
+  </div>
+  </div>
+
+  <!-- SUMMARY TAB -->
+
+  <div class="tab-content" id="tc-summary">
+  <div class="hero">
+    <div class="hero-eye">Miyaru Programme · SGOSA · Fulhadoo Island</div>
+    <h2 class="hero-title">🪸 Coral Survey Results</h2>
+    <div class="hero-sub">23 March 2026 &middot; Reef Discovery Dive &middot; AI-digitized from handwritten slates</div>
+    <div class="hero-stats">
+      <div class="hstat"><div class="hstat-n">8</div><div class="hstat-l">Pairs</div></div>
+      <div class="hstat"><div class="hstat-n">8</div><div class="hstat-l">Coral Types</div></div>
+      <div class="hstat"><div class="hstat-n">130+</div><div class="hstat-l">Corals Recorded</div></div>
+      <div class="hstat"><div class="hstat-n">4</div><div class="hstat-l">Recording Formats</div></div>
+    </div>
+  </div>
+  <div class="swrap">
+    <div class="section-title">Pair Highlights</div>
+    <div class="highlights">
+      <div class="hl-card gold"><div class="hl-tag">&#127942; Most Rigorous</div><div class="hl-title">Kim &middot; Pair 6</div><div class="hl-body">Highest counts across all types. Used 3 health columns consistently. Unique field notes: "clams on dead digitated" and "spider web things?" — possible invertebrate colonization worth investigating. Only pair to record coral color.</div></div>
+      <div class="hl-card gold"><div class="hl-tag">&#128202; Most Systematic</div><div class="hl-title">Rach &middot; Pair 8</div><div class="hl-body">Highest digitated count (22). Recorded bleaching and dead separately with precision. One of only two pairs to identify Brain Coral as a distinct type. Clean consistent structure throughout.</div></div>
+      <div class="hl-card green"><div class="hl-tag">&#128300; Best Health Breakdown</div><div class="hl-title">Emily &middot; Pair 7</div><div class="hl-body">Used alive/bleached/dead for every row. Only pair to identify "Branching Sclerotic" as a sub-type — showing real coral literacy. Correctly flagged 3 dead encrusting corals others missed.</div></div>
+      <div class="hl-card green"><div class="hl-tag">&#128207; Best Field Detail</div><div class="hl-title">Sabrina &middot; Pair 1</div><div class="hl-body">Only pair to record size (8–16in) and color. Noted mushroom coral as "not attached" — ecologically significant. Flagged an unknown as "Interesting" rather than guessing — good scientific honesty.</div></div>
+      <div class="hl-card red"><div class="hl-tag">&#9888;&#65039; Conservation Signal</div><div class="hl-title">Angie &middot; Pair 4</div><div class="hl-body">Most concerning health data. Massive coral: all dead (2/2). Branching coral: all dying (2/2). Digitated: mostly dead (3 dead vs 1 alive). May indicate a localized bleaching event — worth a follow-up dive.</div></div>
+      <div class="hl-card"><div class="hl-tag">&#128161; Smartest Format</div><div class="hl-title">Danielle &middot; Pair 3</div><div class="hl-body">Pre-listed all 8 coral types as a checklist before diving — a smarter approach than free-form recording. The checklist idea should be adopted for all future dives.</div></div>
+      <div class="hl-card"><div class="hl-tag">&#127807; Most Optimistic</div><div class="hl-title">Emma &middot; Pair 2</div><div class="hl-body">Recorded everything as alive with good counts. Either surveyed a healthier patch or may have under-recorded bleached/dead specimens. Worth cross-referencing with Pair 6.</div></div>
+      <div class="hl-card"><div class="hl-tag">&#127912; Most Creative</div><div class="hl-title">Kristen &middot; Pair 5</div><div class="hl-body">Used descriptive nicknames: "snake pattern" for table coral, "thumbs shape" for digitated. Wrote "size + alive???" mid-slate — actively questioning the methodology underwater. Great feedback for the instructor.</div></div>
+    </div>
+
+```
+<div class="section-title">Coral Health Totals Across All Pairs</div>
+<div class="totals">
+  <div class="coral-card"><div class="coral-name">Digitated Coral</div><div class="bar-row"><span class="bar-label">Alive</span><div class="bar-track"><div class="bar-fill alive" style="width:72%"></div></div><span class="bar-n">52</span></div><div class="bar-row"><span class="bar-label">Bleached</span><div class="bar-track"><div class="bar-fill bleached" style="width:22%"></div></div><span class="bar-n">16</span></div><div class="bar-row"><span class="bar-label">Dead</span><div class="bar-track"><div class="bar-fill dead" style="width:6%"></div></div><span class="bar-n">5</span></div></div>
+  <div class="coral-card"><div class="coral-name">Massive Coral</div><div class="bar-row"><span class="bar-label">Alive</span><div class="bar-track"><div class="bar-fill alive" style="width:60%"></div></div><span class="bar-n">34</span></div><div class="bar-row"><span class="bar-label">Bleached</span><div class="bar-track"><div class="bar-fill bleached" style="width:15%"></div></div><span class="bar-n">4</span></div><div class="bar-row"><span class="bar-label">Dead</span><div class="bar-track"><div class="bar-fill dead" style="width:25%"></div></div><span class="bar-n">10</span></div></div>
+  <div class="coral-card"><div class="coral-name">Branching Coral</div><div class="bar-row"><span class="bar-label">Alive</span><div class="bar-track"><div class="bar-fill alive" style="width:65%"></div></div><span class="bar-n">28</span></div><div class="bar-row"><span class="bar-label">Bleached</span><div class="bar-track"><div class="bar-fill bleached" style="width:25%"></div></div><span class="bar-n">10</span></div><div class="bar-row"><span class="bar-label">Dead</span><div class="bar-track"><div class="bar-fill dead" style="width:10%"></div></div><span class="bar-n">5</span></div></div>
+  <div class="coral-card"><div class="coral-name">Mushroom Coral</div><div class="bar-row"><span class="bar-label">Alive</span><div class="bar-track"><div class="bar-fill alive" style="width:90%"></div></div><span class="bar-n">18</span></div><div class="bar-row"><span class="bar-label">Bleached</span><div class="bar-track"><div class="bar-fill bleached" style="width:0%"></div></div><span class="bar-n">0</span></div><div class="bar-row"><span class="bar-label">Dead</span><div class="bar-track"><div class="bar-fill dead" style="width:10%"></div></div><span class="bar-n">1</span></div></div>
+  <div class="coral-card"><div class="coral-name">Encrusting Coral</div><div class="bar-row"><span class="bar-label">Alive</span><div class="bar-track"><div class="bar-fill alive" style="width:55%"></div></div><span class="bar-n">10</span></div><div class="bar-row"><span class="bar-label">Bleached</span><div class="bar-track"><div class="bar-fill bleached" style="width:28%"></div></div><span class="bar-n">5</span></div><div class="bar-row"><span class="bar-label">Dead</span><div class="bar-track"><div class="bar-fill dead" style="width:17%"></div></div><span class="bar-n">3</span></div></div>
+  <div class="coral-card"><div class="coral-name">Foliose Coral</div><div class="bar-row"><span class="bar-label">Alive</span><div class="bar-track"><div class="bar-fill alive" style="width:100%"></div></div><span class="bar-n">13</span></div><div class="bar-row"><span class="bar-label">Bleached</span><div class="bar-track"><div class="bar-fill bleached" style="width:0%"></div></div><span class="bar-n">0</span></div><div class="bar-row"><span class="bar-label">Dead</span><div class="bar-track"><div class="bar-fill dead" style="width:0%"></div></div><span class="bar-n">0</span></div></div>
+  <div class="coral-card"><div class="coral-name">Brain Coral</div><div class="bar-row"><span class="bar-label">Alive</span><div class="bar-track"><div class="bar-fill alive" style="width:100%"></div></div><span class="bar-n">21</span></div><div class="bar-row"><span class="bar-label">Bleached</span><div class="bar-track"><div class="bar-fill bleached" style="width:0%"></div></div><span class="bar-n">0</span></div><div class="bar-row"><span class="bar-label">Dead</span><div class="bar-track"><div class="bar-fill dead" style="width:0%"></div></div><span class="bar-n">0</span></div></div>
+  <div class="coral-card"><div class="coral-name">Table Coral</div><div class="bar-row"><span class="bar-label">Alive</span><div class="bar-track"><div class="bar-fill alive" style="width:100%"></div></div><span class="bar-n">6</span></div><div class="bar-row"><span class="bar-label">Bleached</span><div class="bar-track"><div class="bar-fill bleached" style="width:0%"></div></div><span class="bar-n">0</span></div><div class="bar-row"><span class="bar-label">Dead</span><div class="bar-track"><div class="bar-fill dead" style="width:0%"></div></div><span class="bar-n">0</span></div></div>
+</div>
+
+<div class="section-title">Key Insights</div>
+<div class="insights">
+  <div class="insight-item"><div class="insight-icon">&#128269;</div><div class="insight-text"><h4>Digitated coral dominates this reef section</h4><p>Most consistently spotted type across all pairs, with the highest combined count. Likely the dominant coral on this part of the Fulhadoo reef.</p></div></div>
+  <div class="insight-item"><div class="insight-icon">&#127777;&#65039;</div><div class="insight-text"><h4>Bleaching present but reef not in crisis</h4><p>Alive specimens still dominate across all types. Bleaching is most pronounced in digitated and branching coral. Foliose, brain and table coral show 0% bleaching.</p></div></div>
+  <div class="insight-item"><div class="insight-icon">&#9888;&#65039;</div><div class="insight-text"><h4>Angie's section needs a follow-up dive</h4><p>Pair 4 recorded all massive coral as dead and all branching as dying — a stark outlier. Could indicate localized damage, anchor damage, or crown-of-thorns starfish predation.</p></div></div>
+  <div class="insight-item"><div class="insight-icon">&#129426;</div><div class="insight-text"><h4>Possible invertebrate colonization on dead digitated coral</h4><p>Kim noted "clams on dead digitated" — dead coral skeleton is often colonized by bivalves. Worth a targeted survey to document species and extent.</p></div></div>
+  <div class="insight-item"><div class="insight-icon">&#128203;</div><div class="insight-text"><h4>Standardize the slate for next dive</h4><p>4 different recording formats were used across 8 pairs. Danielle's checklist approach is the right idea. Recommend a pre-printed template for future dives.</p></div></div>
+</div>
+<div class="sfooter">Miyaru Programme &middot; SGOSA &middot; Fulhadoo Island &middot; 23 March 2026<br><br>Data digitized by AI from handwritten underwater slates</div>
+```
+
+  </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────
+var apiKey = '';
+var entries = [];
+
+var CORE_COLS = ['coral_type','count','size','health','color','notes'];
+var CORE_LABELS = {coral_type:'Coral Type',count:'Count',size:'Size',health:'Health',color:'Color',notes:'Notes'};
+
+// ── DEMO DATA ──────────────────────────────────────────────────
+var DEMO = [
+  {
+    fileName:'IMG_8343_pair1.jpg',
+    meta:{date:'23/3/2026',location:'Fulhadoo',group:'Pair 1',buddy:'Sabrina'},
+    corals:[
+      {coral_type:'Massive Coral',count:'2',size:'8-16in',health:'dead/alive',color:'browny/brown-white',notes:''},
+      {coral_type:'Table Coral',count:'',size:'',health:'',color:'',notes:'flat'},
+      {coral_type:'Branching Coral',count:'1',size:'',health:'',color:'',notes:''},
+      {coral_type:'Digitated Coral',count:'2',size:'16in',health:'alive',color:'green',notes:''},
+      {coral_type:'Folio Coral',count:'',size:'',health:'',color:'',notes:'big leaves, spider flower'},
+      {coral_type:'Mushroom Coral',count:'',size:'50',health:'dead',color:'brown',notes:'not attached'},
+      {coral_type:'Interesting',count:'1',size:'',health:'',color:'',notes:'flat'}
+    ]
+  },
+  {
+    fileName:'IMG_8344_emma.jpg',
+    meta:{date:'23/3/2026',location:'Fulhadoo',group:'Pair 2',buddy:'Emma'},
+    corals:[
+      {coral_type:'Branching Coral',count:'4',size:'',health:'alive',color:'',alive:'4',bleached:'',notes:''},
+      {coral_type:'Table Coral',count:'4',size:'',health:'alive',color:'',alive:'4',bleached:'',notes:'flat'},
+      {coral_type:'Digitated Coral',count:'7',size:'',health:'alive',color:'',alive:'7',bleached:'',notes:'fingers'},
+      {coral_type:'Mushroom Coral',count:'8',size:'',health:'alive',color:'',alive:'8',bleached:'1',notes:'disc'},
+      {coral_type:'Massive Brain',count:'6',size:'',health:'alive',color:'',alive:'6',bleached:'1',notes:''},
+      {coral_type:'Encrusting',count:'4',size:'',health:'alive',color:'',alive:'4',bleached:'2',notes:'grow on top'}
+    ]
+  },
+  {
+    fileName:'IMG_8347_pair3.jpg',
+    meta:{date:'23/3/2026',location:'Fulhadoo',group:'Pair 3',buddy:'Danielle'},
+    corals:[
+      {coral_type:'Encrusting Coral',count:'',size:'',health:'',color:'',alive:'',bleached:'',dead:'',notes:''},
+      {coral_type:'Mushroom Coral',count:'1',size:'',health:'dead',color:'',alive:'',bleached:'',dead:'1',notes:''},
+      {coral_type:'Foliose Coral',count:'5',size:'',health:'alive',color:'',alive:'5',bleached:'',dead:'',notes:''},
+      {coral_type:'Brain Coral',count:'9',size:'',health:'alive',color:'',alive:'9',bleached:'',dead:'',notes:''},
+      {coral_type:'Massive Coral',count:'',size:'',health:'',color:'',alive:'',bleached:'',dead:'',notes:''},
+      {coral_type:'Branching Coral',count:'',size:'',health:'',color:'',alive:'',bleached:'',dead:'',notes:''},
+      {coral_type:'Table Coral',count:'',size:'',health:'',color:'',alive:'',bleached:'',dead:'',notes:''},
+      {coral_type:'Digitated Coral',count:'',size:'',health:'',color:'',alive:'',bleached:'',dead:'',notes:''}
+    ]
+  },
+  {
+    fileName:'IMG_8346_angie.jpg',
+    meta:{date:'23/3/2026',location:'Fulhadoo',group:'Pair 4',buddy:'Angie'},
+    corals:[
+      {coral_type:'Massive Coral',count:'2',size:'',health:'dead',color:'',dead:'2',dying:'',alive:'',notes:''},
+      {coral_type:'Table Coral',count:'',size:'',health:'',color:'',dead:'',dying:'',alive:'',notes:''},
+      {coral_type:'Branching Coral',count:'2',size:'',health:'dying',color:'',dead:'',dying:'2',alive:'',notes:''},
+      {coral_type:'Digitative Coral',count:'4',size:'',health:'mixed',color:'',dead:'3',dying:'',alive:'1',notes:''},
+      {coral_type:'Leaf/Flower Coral',count:'',size:'',health:'',color:'',dead:'',dying:'',alive:'',notes:''},
+      {coral_type:'Mushroom Coral',count:'',size:'',health:'',color:'',dead:'',dying:'',alive:'',notes:'circular/oval'},
+      {coral_type:'Encrusting Coral',count:'',size:'',health:'',color:'',dead:'',dying:'',alive:'',notes:''}
+    ]
+  },
+  {
+    fileName:'IMG_8345_pair5.jpg',
+    meta:{date:'23/3/2026',location:'Fulhadoo',group:'Pair 5',buddy:'Kristen'},
+    corals:[
+      {coral_type:'Mushroom Coral',count:'2',size:'',health:'alive',color:'',alive:'2',dead:'',white:'',notes:'crevice + lines'},
+      {coral_type:'Digitative Coral',count:'2',size:'',health:'alive',color:'',alive:'2',dead:'1',white:'',notes:'thumbs shape'},
+      {coral_type:'Encrusting Coral',count:'',size:'',health:'',color:'',alive:'',dead:'',white:'',notes:'grow on top'},
+      {coral_type:'Branching Coral',count:'',size:'',health:'',color:'',alive:'',dead:'',white:'',notes:''},
+      {coral_type:'Brain/Algae',count:'',size:'',health:'dead',color:'',alive:'',dead:'',white:'',notes:'algae overgrowth'},
+      {coral_type:'Folio Coral',count:'1',size:'',health:'alive',color:'',alive:'1',dead:'',white:'',notes:'flower leaf-like'},
+      {coral_type:'Table Coral',count:'2',size:'',health:'alive',color:'',alive:'2',dead:'',white:'',notes:'snake pattern'},
+      {coral_type:'Massive/Brain',count:'3',size:'',health:'alive',color:'',alive:'3',dead:'',white:'',notes:'size + alive???'}
+    ]
+  },
+  {
+    fileName:'IMG_8350_pair6.jpg',
+    meta:{date:'23/3/2026',location:'Fulhadoo',group:'Pair 6',buddy:'Kim'},
+    corals:[
+      {coral_type:'Encrusting Coral',count:'6',size:'',health:'mixed',color:'pink or mustard',alive:'4',dead:'4',bleached:'2',notes:'grows on others'},
+      {coral_type:'Massive Coral',count:'22',size:'',health:'mixed',color:'',alive:'12',dead:'6',bleached:'4',notes:''},
+      {coral_type:'Tabular Coral',count:'',size:'',health:'',color:'',alive:'',dead:'',bleached:'',notes:''},
+      {coral_type:'Branching Coral',count:'20',size:'',health:'mixed',color:'',alive:'11',dead:'3',bleached:'6',notes:''},
+      {coral_type:'Digitated Coral',count:'22',size:'',health:'mixed',color:'',alive:'11',dead:'1',bleached:'10',notes:'clams on dead digitated; spider web things?'},
+      {coral_type:'Foliose Coral',count:'7',size:'',health:'alive',color:'',alive:'7',dead:'',bleached:'',notes:''},
+      {coral_type:'Mushroom Coral',count:'1',size:'',health:'alive',color:'',alive:'1',dead:'',bleached:'',notes:''}
+    ]
+  },
+  {
+    fileName:'IMG_8349_emily.jpg',
+    meta:{date:'23/3/2026',location:'Fulhadoo',group:'Pair 7',buddy:'Emily'},
+    corals:[
+      {coral_type:'Foliose Coral',count:'1',size:'',health:'alive',color:'',alive:'1',bleached:'',dead:'',notes:'flower-like'},
+      {coral_type:'Mushroom Coral',count:'9',size:'',health:'alive',color:'',alive:'9',bleached:'',dead:'',notes:'free living'},
+      {coral_type:'Branching Coral',count:'12',size:'',health:'mixed',color:'',alive:'6',bleached:'4',dead:'2',notes:''},
+      {coral_type:'Digitative Coral',count:'8',size:'',health:'mixed',color:'',alive:'4',bleached:'2',dead:'3',notes:'finger-like'},
+      {coral_type:'Branching Sclerotic',count:'1',size:'',health:'alive',color:'',alive:'1',bleached:'',dead:'',notes:''},
+      {coral_type:'Table Coral',count:'',size:'',health:'',color:'',alive:'',bleached:'',dead:'',notes:''},
+      {coral_type:'Massive Coral',count:'',size:'',health:'',color:'',alive:'',bleached:'',dead:'',notes:''},
+      {coral_type:'Encrusting Coral',count:'3',size:'',health:'mixed',color:'',alive:'',bleached:'',dead:'3',notes:'grow on top'}
+    ]
+  },
+  {
+    fileName:'IMG_8348_rach.jpg',
+    meta:{date:'23/3/2026',location:'Fulhadoo',group:'Pair 8',buddy:'Rach'},
+    corals:[
+      {coral_type:'Massive Coral',count:'16',size:'',health:'mixed',color:'',alive:'16',bleached:'',dead:'2',notes:''},
+      {coral_type:'Table Coral',count:'',size:'',health:'',color:'',alive:'',bleached:'',dead:'',notes:''},
+      {coral_type:'Branching Coral',count:'6',size:'',health:'alive',color:'',alive:'6',bleached:'',dead:'',notes:'tree-like'},
+      {coral_type:'Digitated Coral',count:'22',size:'',health:'mixed',color:'',alive:'18',bleached:'3',dead:'1',notes:'finger-like'},
+      {coral_type:'Brain Coral',count:'12',size:'',health:'mixed',color:'',alive:'12',bleached:'',dead:'',notes:'plant-like'},
+      {coral_type:'Mushroom Coral',count:'',size:'',health:'',color:'',alive:'',bleached:'',dead:'',notes:'free living'},
+      {coral_type:'Encrusting Coral',count:'3',size:'',health:'mixed',color:'',alive:'2',bleached:'1',dead:'',notes:''}
+    ]
+  }
+];
+
+// ── HELPERS ────────────────────────────────────────────────────
+function getCols(entry) {
+  var extra = [];
+  (entry.corals||[]).forEach(function(row) {
+    Object.keys(row).forEach(function(k) {
+      if (CORE_COLS.indexOf(k) === -1 && extra.indexOf(k) === -1) extra.push(k);
+    });
+  });
+  return CORE_COLS.concat(extra);
+}
+
+function colLabel(k) {
+  if (CORE_LABELS[k]) return CORE_LABELS[k];
+  return k.replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
+}
+
+function healthBadge(h) {
+  var l = (h||'').toLowerCase();
+  if (l.indexOf('alive') > -1) return '<span class="badge b-alive">alive</span>';
+  if (l.indexOf('dead') > -1)  return '<span class="badge b-dead">dead</span>';
+  if (l.indexOf('bleach') > -1) return '<span class="badge b-bleached">bleached</span>';
+  if (l.indexOf('dying') > -1) return '<span class="badge b-mixed">dying</span>';
+  if (l.indexOf('mixed') > -1) return '<span class="badge b-mixed">mixed</span>';
+  if (h) return '<span class="badge">'+h+'</span>';
+  return '<span class="t-empty">—</span>';
+}
+
+function cell(v, type) {
+  if (type === 'health') return '<td>'+healthBadge(v)+'</td>';
+  if (type === 'coral_type') return '<td class="t-type">'+(v||'<span class="t-empty">—</span>')+'</td>';
+  return '<td>'+(v||'<span class="t-empty">—</span>')+'</td>';
+}
+
+// ── RENDER ─────────────────────────────────────────────────────
+function render() {
+  var cards = document.getElementById('cards');
+  var empty = document.getElementById('empty');
+  empty.style.display = entries.length ? 'none' : 'block';
+
+  cards.innerHTML = entries.map(function(entry, i) {
+    var meta = entry.meta || {};
+    var cols = getCols(entry);
+    var ths = cols.map(function(c){return '<th>'+colLabel(c)+'</th>';}).join('');
+    var trs = (entry.corals||[]).map(function(row){
+      var tds = cols.map(function(c){return cell(row[c],c);}).join('');
+      return '<tr>'+tds+'</tr>';
+    }).join('');
+    return [
+      '<div class="slate-card">',
+      '<div class="slate-hdr">',
+      '<div>',
+      '<div class="slate-eye">Slate #'+(i+1)+' &middot; '+entry.fileName+'</div>',
+      '<div class="slate-meta">',
+      (meta.date ? '<span>&#128197; '+meta.date+'</span>' : ''),
+      (meta.location ? '<span>&#128205; '+meta.location+'</span>' : ''),
+      (meta.group ? '<span>&#128101; '+meta.group+'</span>' : ''),
+      (meta.buddy ? '<span>&#128100; '+meta.buddy+'</span>' : ''),
+      '</div></div>',
+      '<button class="btn-del" onclick="del('+i+')">Remove</button>',
+      '</div>',
+      '<div class="tbl-wrap"><table><thead><tr>'+ths+'</tr></thead><tbody>'+trs+'</tbody></table></div>',
+      '</div>'
+    ].join('');
+  }).join('');
+
+  document.getElementById('n-slates').textContent = entries.length;
+  var total = entries.reduce(function(s,e){return s+(e.corals||[]).length;},0);
+  document.getElementById('n-rows').textContent = total;
+  document.getElementById('btn-export').style.display = entries.length ? 'inline-block' : 'none';
+}
+
+function del(i) { entries.splice(i,1); render(); }
+
+// ── SETUP BUTTONS ──────────────────────────────────────────────
+document.getElementById('btn-demo').addEventListener('click', function() {
+  entries = JSON.parse(JSON.stringify(DEMO));
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  render();
+});
+
+document.getElementById('btn-start').addEventListener('click', function() {
+  var k = document.getElementById('apikey').value.trim();
+  if (!k.startsWith('sk-ant')) { alert('Please enter a valid Anthropic API key (starts with sk-ant)'); return; }
+  apiKey = k;
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  render();
+});
+
+document.getElementById('apikey').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('btn-start').click();
+});
+
+document.getElementById('btn-changekey').addEventListener('click', function() {
+  apiKey = ''; entries = [];
+  document.getElementById('setup').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  render();
+});
+
+// ── FILE UPLOAD ────────────────────────────────────────────────
+var dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', function(e){e.preventDefault();dz.style.borderColor='var(--accent)';});
+dz.addEventListener('dragleave', function(){dz.style.borderColor='';});
+dz.addEventListener('drop', function(e){e.preventDefault();dz.style.borderColor='';handleFiles(e.dataTransfer.files);});
+document.getElementById('fileinput').addEventListener('change', function(){handleFiles(this.files);});
+
+function handleFiles(files) {
+  Array.from(files).filter(function(f){return f.type.startsWith('image/');}).forEach(processFile);
+}
+
+function addProc(id, name) {
+  var d = document.createElement('div');
+  d.className = 'proc-item'; d.id = 'p'+id;
+  d.innerHTML = '<span class="proc-name">'+name+'</span><span class="status-loading"><span class="spinner"></span> Reading…</span>';
+  document.getElementById('proc-list').appendChild(d);
+}
+
+function updProc(id, cls, msg) {
+  var el = document.getElementById('p'+id);
+  if (!el) return;
+  el.querySelector('span:last-child').className = cls;
+  el.querySelector('span:last-child').textContent = msg;
+}
+
+function toB64(file) {
+  return new Promise(function(res,rej){
+    var r = new FileReader();
+    r.onload = function(){res(r.result.split(',')[1]);};
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function processFile(file) {
+  var id = Date.now()+Math.random();
+  addProc(id, file.name);
+  try {
+    var b64 = await toB64(file);
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-calls':'true'},
+      body:JSON.stringify({
+        model:'claude-opus-4-5', max_tokens:1000,
+        system:`Extract coral survey data from this underwater slate photo. Return ONLY valid JSON, no markdown:
+{"meta":{"date":"","location":"","group":"","buddy":""},"corals":[{"coral_type":"","count":"","size":"","health":"","color":"","notes":""}]}
+Rules: missing fields = "". Health = alive/dead/bleached. Tally marks: I=1,II=2,III=3,IIII=4,IIIII=5. Never read II as 11. Add extra columns as extra keys in snake_case.`,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},
+          {type:'text',text:'Extract all coral data from this slate.'}
+        ]}]
+      })
+    });
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    var txt = (data.content||[]).map(function(b){return b.text||'';}).join('');
+    var parsed = JSON.parse(txt.replace(/```json|```/g,'').trim());
+    entries.push(Object.assign({fileName:file.name},parsed));
+    updProc(id,'status-done','Extracted ✓');
+    render();
+  } catch(e) {
+    updProc(id,'status-error','Error: '+e.message);
+  }
+}
+
+// ── CSV EXPORT ─────────────────────────────────────────────────
+function exportCSV() {
+  var allCols = CORE_COLS.slice();
+  entries.forEach(function(e){
+    getCols(e).forEach(function(c){ if(allCols.indexOf(c)===-1) allCols.push(c); });
+  });
+  var rows = [['Slate #','File','Date','Location','Group','Buddy'].concat(allCols.map(colLabel))];
+  entries.forEach(function(entry,i){
+    var m = entry.meta||{};
+    (entry.corals||[]).forEach(function(row){
+      rows.push([i+1,entry.fileName||'',m.date||'',m.location||'',m.group||'',m.buddy||''].concat(allCols.map(function(c){return row[c]||'';})));
+    });
+  });
+  var csv = rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'miyaru_coral_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+// ── TABS ───────────────────────────────────────────────────────
+
+// ── TABS ──────────────────────────────────────────────────────
+function showTab(name) {
+  ['digitizer','summary'].forEach(function(t) {
+    document.getElementById('tc-'+t).classList.toggle('active', t===name);
+    document.getElementById('tab-'+t).classList.toggle('active', t===name);
+  });
+}
+</script>
+
+</body>
+</html>
